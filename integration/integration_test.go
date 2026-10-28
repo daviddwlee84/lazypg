@@ -159,9 +159,24 @@ func TestRemoteGuards(t *testing.T) {
 	f, _ := os.OpenFile(filepath.Join(dir, "lazypg.toml"), os.O_APPEND|os.O_WRONLY, 0)
 	f.WriteString("\n[envs.prod]\ntier = \"prod\"\ninstance = \"fake\"\n")
 	f.Close()
+	extra, err := os.OpenFile(filepath.Join(dir, "lazypg.toml"), os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	extra.WriteString("\n[envs.dev]\ntier='dev'\ninstance='devfake'\n[envs.stage]\ntier='stage'\ninstance='stagefake'\n")
+	extra.Close()
 	cfg := filepath.Join(e.root, "xdg", "XDG_CONFIG_HOME", "lazypg")
 	write(t, filepath.Join(cfg, "config.toml"), "[instances.fake]\nhost = \"127.0.0.1\"\nport = "+port+"\nsslmode = \"disable\"\ntier = \"prod\"\n")
 	write(t, filepath.Join(cfg, "credentials.toml"), "[fake]\npassword = \"pw\"\n")
+	userCfg, err := os.OpenFile(filepath.Join(cfg, "config.toml"), os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tier := range []string{"dev", "stage"} {
+		fmt.Fprintf(userCfg, "\n[instances.%sfake]\nhost='127.0.0.1'\nport=%s\nsslmode='disable'\ntier='%s'\n", tier, port, tier)
+	}
+	userCfg.Close()
+	write(t, filepath.Join(cfg, "credentials.toml"), "[fake]\npassword='pw'\n[devfake]\npassword='pw'\n[stagefake]\npassword='pw'\n")
 	e.ok(dir, "start") // the local instance doubles as pgschema's plan host
 
 	deadline := time.Now().Add(30 * time.Second)
@@ -177,6 +192,12 @@ func TestRemoteGuards(t *testing.T) {
 		time.Sleep(time.Second)
 	}
 
+	for _, tier := range []string{"dev", "stage"} {
+		e.fails(dir, 3, "needs confirmation", "migrate", "--env", tier)
+	}
+	e.fails(dir, 3, "reset is not allowed", "reset", "--env", "stage", "--yes")
+	e.fails(dir, 3, "branch is not allowed", "branch", "use", "main", "--env", "stage", "--yes")
+	e.ok(dir, "env", "use", "dev")
 	e.fails(dir, 3, "use is not allowed on prod", "env", "use", "prod")
 	e.fails(dir, 3, "requires --confirm prod", "migrate", "--env", "prod")
 	e.fails(dir, 3, "requires --confirm prod", "migrate", "--env", "prod", "--yes")
