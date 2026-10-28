@@ -58,6 +58,21 @@ Public fixed-tag/latest source installs and actual Homebrew installation are
 post-publication acceptance checks; their final results belong in the release
 handoff and workflow links, not an assumed claim in this pre-publication report.
 
+## Local acceptance evidence
+
+On the candidate source with the patched Go 1.26.10 toolchain:
+
+- `go test -race ./...` and `go vet ./...`: passed.
+- `LAZYPG_IT=1 go test ./integration -v -count=1 -timeout 15m`: all four scenarios passed.
+- `govulncheck v1.9.0 ./...`: no vulnerabilities found.
+- Workflow lint and publisher/source-distribution contract tests: passed.
+- Independent source archive and module ZIP unpack/build/smoke: passed.
+- Four-platform snapshot archive/checksum/architecture checks and native macOS arm64 smoke: passed.
+
+The release tag workflow repeats the required checks on the exact public commit.
+Other native platforms are verified by its CI matrix; these local results alone
+make no claim about their runtime execution.
+
 ## Remaining limitations
 
 - Connections and arbitrary SQL have the configured PostgreSQL role's privileges.

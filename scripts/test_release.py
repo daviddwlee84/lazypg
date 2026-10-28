@@ -256,3 +256,22 @@ class GitHubAdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class ReleaseNotesTests(unittest.TestCase):
+    def test_draft_uses_only_matching_changelog_section(self):
+        remote = release.GitHub("owner/example")
+        captured = []
+        def call(*args):
+            self.assertIn("--notes-file", args)
+            with open(args[-1]) as stream:
+                captured.append(stream.read())
+        with mock.patch.object(release.Path, "read_text", return_value="## Unreleased\nfuture\n\n## v0.1.0 — date\nReviewed changes.\n\n## v0.0.1\nOld changes.\n"), mock.patch.object(remote, "call", side_effect=call):
+            remote.create("v0.1.0")
+        self.assertEqual(captured, ["Reviewed changes.\n"])
+
+    def test_missing_changelog_entry_prevents_creation(self):
+        remote = release.GitHub("owner/example")
+        with mock.patch.object(release.Path, "read_text", return_value="## Unreleased\n"), mock.patch.object(remote, "call") as call:
+            with self.assertRaisesRegex(ValueError, "no changelog entry"):
+                remote.create("v0.1.0")
+            call.assert_not_called()
