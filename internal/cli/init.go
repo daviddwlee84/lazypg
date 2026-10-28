@@ -57,7 +57,7 @@ schemas = ["public"]
 # tier = "prod"
 # instance = "acme/prod"
 
-# Databases owned by other repositories (read-only here):
+# Databases owned by other repositories (SQL privileges follow the configured role):
 # [[deps]]
 # name = "events"
 # git = "git@github.com:acme/agent-events.git"

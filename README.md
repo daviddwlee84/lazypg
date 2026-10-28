@@ -81,7 +81,7 @@ engine = "pgschema"              # or "dbmate"
 schemas = ["journal"]
 extensions = ["vector"]          # created by lazypg; pgschema does not manage extensions
 
-[[deps]]                         # owned by another repo; read-only here
+[[deps]]                         # owned by another repo; SQL privileges follow the role
 name = "events"
 git = "git@github.com:acme/agent-events.git"
 ref = "v1.2.0"
