@@ -116,6 +116,8 @@ lazypg env dotenv > .env.local      # for tools that insist on a file
 lazypg url --db events
 ```
 
+`lazypg ui` opens the selected env in pgtui. In pgtui's connection dialog, press Tab to reach "Discovered", then Enter on the "(Environment)" entry. pgtui v0.3.0 ignores `PGDATABASE` and opens the `postgres` database; its main branch opens the right database (`go install github.com/pgplex/pgtui/cmd/pgtui@main`).
+
 For CI, set `LAZYPG_URL_<ENV>` (for example `LAZYPG_URL_PROD=postgres://…`). It supplies the whole connection, and the tier still comes from `lazypg.toml`.
 
 ## Schema engines

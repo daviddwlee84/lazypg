@@ -301,8 +301,12 @@ func newUI() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "ui",
 		Short: "Browse the selected env in pgtui (lazygit-style TUI by pgplex)",
-		Long: `Launches pgtui with PG* variables for the selected env. pgtui lists the
-connection under its discovered instances; pick it to connect.`,
+		Long: `Launches pgtui with PG* variables for the selected env. In pgtui's
+connection dialog press Tab to reach "Discovered", then Enter on the
+"(Environment)" entry.
+
+pgtui v0.3.0 ignores PGDATABASE and opens the "postgres" database; its main
+branch opens the right one: go install github.com/pgplex/pgtui/cmd/pgtui@main`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !proc.Has("pgtui") {
@@ -320,8 +324,12 @@ connection under its discovered instances; pick it to connect.`,
 			if err := a.Check(t, env.OpConnect, "Open pgtui"); err != nil {
 				return err
 			}
+			a.Out.Info("pgtui: Tab → Discovered → Enter on \"(Environment)\"")
 			c := exec.CommandContext(ctx, "pgtui")
-			c.Env = append(os.Environ(), t.PGEnv(name)...)
+			// pgtui (v0.3) connects to a discovered instance as $USER to the
+			// "postgres" database, ignoring PGUSER/PGDATABASE; it does pick up
+			// PGPASSWORD. Setting USER for the child makes the entry work.
+			c.Env = append(append(os.Environ(), t.PGEnv(name)...), "USER="+t.User)
 			c.Stdin, c.Stdout, c.Stderr = os.Stdin, os.Stdout, os.Stderr
 			return c.Run()
 		},
