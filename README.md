@@ -26,7 +26,7 @@ Alternatively, download a matching macOS/Linux amd64/arm64 archive from
 requires patched Go 1.26.10 or Go 1.27.3 or newer:
 
 ```sh
-go install github.com/daviddwlee84/lazypg/cmd/lazypg@v0.1.1
+go install github.com/daviddwlee84/lazypg/cmd/lazypg@v0.1.2
 ```
 
 Inspect `go env GOBIN GOPATH` to locate the installed binary (`GOBIN`, or
@@ -233,4 +233,4 @@ Code layout: `internal/cli` is a thin Cobra layer over `internal/app`, which hol
 
 ## License
 
-[MIT](LICENSE). Development skill files retain their own MIT notice.
+[MIT](LICENSE). Dependency terms are reproduced in [third-party notices](THIRD_PARTY_NOTICES.txt), which accompany release binaries. Development skill files retain their own MIT notice.

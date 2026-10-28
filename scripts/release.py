@@ -22,6 +22,7 @@ STABLE_TAG = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]
 
 # Stable tags before this boundary retain their original immutable asset set.
 SOURCE_SINCE = (0, 0, 0)
+NOTICES_SINCE = (0, 1, 2)
 EVIDENCE_ROOTS = (".specstory", ".claude/plans", ".codex/plans", ".cursor/plans", ".opencode/plans")
 
 
@@ -83,6 +84,9 @@ def verify_dist(dist, project, binary, version, smoke=False, tag=None):
             raise ValueError(f"checksum mismatch: {source_name}")
         verify_source(archive, smoke, tag)
     required = {binary, "LICENSE", f"completions/{binary}.bash", f"completions/{binary}.zsh"}
+    stable_version = re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", version)
+    if stable_version is None or tuple(map(int, stable_version.groups())) >= NOTICES_SINCE:
+        required.add("THIRD_PARTY_NOTICES.txt")
     host = (platform.system().lower(), {"x86_64": "amd64", "aarch64": "arm64"}.get(platform.machine().lower(), platform.machine().lower()))
     for name, target in expected.items():
         archive = dist / name

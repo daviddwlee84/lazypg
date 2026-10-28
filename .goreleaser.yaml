@@ -21,6 +21,7 @@ archives:
       mtime: "{{ .CommitDate }}"
     files:
       - src: LICENSE
+      - src: THIRD_PARTY_NOTICES.txt
       - src: completions/*
 checksum:
   name_template: checksums.txt

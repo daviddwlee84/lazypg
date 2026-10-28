@@ -67,6 +67,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 -m unittest discover -s scripts -v
+      - run: python3 scripts/notices.py --check
       - run: python3 scripts/check-distribution.py
       - uses: goreleaser/goreleaser-action@v6
         with:

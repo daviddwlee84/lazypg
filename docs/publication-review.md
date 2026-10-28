@@ -1,4 +1,4 @@
-# Public release review — v0.1.1
+# Public release review — v0.1.2
 
 Reviewed on 2026-10-28. This is a bounded source and test review of an early-stage
 tool, not a production-readiness certification or an independent security audit.
@@ -19,7 +19,9 @@ filtering. No original private refs are pushed.
 
 Project code uses root MIT. The development skill has its own MIT notice. Release
 support scripts and tests are adapted from the same maintainer's MIT lazypkg
-project. Linked tools remain under their own licenses; downloaded tools are not
+project. Static dependency and Go standard-library notice texts are included in
+THIRD_PARTY_NOTICES.txt from v0.1.2; CI verifies the inventory. Older tags retain
+their original packaging and are superseded. Linked tools remain under their own licenses; downloaded tools are not
 bundled into lazypg archives.
 
 ## Findings addressed

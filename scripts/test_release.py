@@ -131,6 +131,26 @@ class ReleaseTests(unittest.TestCase):
             rows.append(f"{release.digest(self.root / name)}  {name}")
         (self.root / "checksums.txt").write_text("\n".join(rows) + "\n")
 
+    def test_new_archive_contract_requires_nonempty_notices(self):
+        self.fixture_dist()
+        with mock.patch.object(release, "NOTICES_SINCE", (0, 1, 0)):
+            with self.assertRaisesRegex(ValueError, "unexpected archive entries"):
+                release.verify_dist(self.root, "example", "example", "0.1.0")
+            rows = []
+            for path in self.root.glob("*.tar.gz"):
+                with tarfile.open(path, "r:gz") as archive:
+                    entries = [(member, archive.extractfile(member).read()) for member in archive.getmembers()]
+                with tarfile.open(path, "w:gz") as archive:
+                    for member, data in entries:
+                        archive.addfile(member, io.BytesIO(data))
+                    data = b"Dependency license and copyright notices"
+                    member = tarfile.TarInfo("THIRD_PARTY_NOTICES.txt")
+                    member.size = len(data)
+                    archive.addfile(member, io.BytesIO(data))
+                rows.append(f"{release.digest(path)}  {path.name}")
+            (self.root / "checksums.txt").write_text("\n".join(rows) + "\n")
+            self.assertEqual(len(release.verify_dist(self.root, "example", "example", "0.1.0")), 5)
+
     def test_archive_contract_and_checksum_failure(self):
         self.fixture_dist()
         self.assertEqual(len(release.verify_dist(self.root, "example", "example", "0.1.0")), 5)

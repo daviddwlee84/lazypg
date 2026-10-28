@@ -3,7 +3,8 @@
   "version_symbol": "github.com/daviddwlee84/lazypg/internal/cli.Version",
   "required": [
     "cmd/lazypg/main.go",
-    "internal/instance/compose.yaml.tmpl"
+    "internal/instance/compose.yaml.tmpl",
+    "THIRD_PARTY_NOTICES.txt"
   ],
   "smoke": []
 }

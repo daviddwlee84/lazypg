@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v0.1.2 — 2026-10-28
+
+Include third-party module and Go standard-library notices in binary and source
+archives. CI regenerates the inventory for all four supported build targets and
+rejects stale notices. The release verifier requires this file from v0.1.2 onward;
+older tags keep their original immutable archive layouts. Use v0.1.2 for new installs.
+
 ## v0.1.1 — 2026-10-28
 
 Revalidate a saved default environment against its current tier. If a previously
