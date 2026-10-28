@@ -80,8 +80,8 @@ make no claim about their runtime execution.
 Final inspection found that a saved dev/stage selection could silently become the
 implicit prod target after its configuration tier changed. `Current` now rechecks
 the current tier and falls back to local when defaults are denied. A regression
-test covers dev → prod → stage and removal. v0.1.0 remains immutable; v0.1.1 is
-the recommended version and repeats the same release gates.
+test covers dev → prod → stage and removal. v0.1.0 remains immutable; v0.1.1 introduced
+this correction; use v0.1.2 for the complete release packaging.
 
 ## Remaining limitations
 
@@ -113,3 +113,27 @@ the recommended version and repeats the same release gates.
 These disclosed operational limits do not block an experimental public release.
 An unresolved credential leak, wrong-target operation, data-loss regression,
 failing required check or incomplete release artifact does block publication.
+
+## Published acceptance
+
+Recommended release: [v0.1.2](https://github.com/daviddwlee84/lazypg/releases/tag/v0.1.2),
+source commit `c237ba7d02cd68d5d4b294777063ddf3105b79ba`.
+[Release CI](https://github.com/daviddwlee84/lazypg/actions/runs/40696372411)
+passed all four native platforms, Docker integration, vulnerability and distribution gates.
+
+Public fixed-tag and latest Go installations passed outside the checkout; the
+public module ZIP includes third-party notices and excludes private conversations.
+A newly pushed tag initially hit the Go service's documented negative cache;
+verification succeeded with the official proxy and checksum service after indexing.
+The review did not disable checksum verification or change global Go configuration.
+
+The public macOS arm64 archive was downloaded, checksum-verified and exercised;
+its binary reports Go 1.26.10 build provenance. Homebrew installation and upgrade
+were tested on macOS and the central tap's Linux runner. Homebrew package revision
+`0.1.2_1` retains THIRD_PARTY_NOTICES.txt in the installation prefix; its binary
+matches the verified release SHA-256. The [tap revision validation](https://github.com/daviddwlee84/homebrew-tap/actions/runs/40698332634)
+passed before committing the generated formula. Upstream assets remain immutable.
+
+The original private checkout retains complete history and no public push remote.
+Future public development should use the separate clean public checkout. The
+awesome-lazy-tools recommendation table was not changed by this publication task.
