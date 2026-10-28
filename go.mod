@@ -1,6 +1,6 @@
 module github.com/daviddwlee84/lazypg
 
-go 1.26.0
+go 1.26.10
 
 require (
 	github.com/amacneil/dbmate/v2 v2.37.0

@@ -40,6 +40,16 @@ jobs:
         with:
           go-version-file: go.mod
       - run: LAZYPG_IT=1 go test ./integration -v -count=1 -timeout 15m
+  vulnerability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
   distribution:
     runs-on: ubuntu-latest
     steps:

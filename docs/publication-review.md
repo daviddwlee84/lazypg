@@ -34,6 +34,12 @@ bundled into lazypg archives.
 | External tools | Validate pgschema version components; checksums protect initial downloads; unique temporary files avoid concurrent download collisions. Failure tests do not install corrupt or failed downloads. |
 | Version/distribution | Go installs recover module build version; injected release version takes precedence; verify source, module ZIP, four archives and native executable behavior. |
 
+The initial vulnerability scan detected [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809)
+in the review host's Go 1.27.2 standard library. The minimum Go patch was raised to
+1.26.10, and release builds use the fixed 1.26.10 toolchain. Source users must use
+1.26.10 or 1.27.3 or newer; Go 1.27.0–1.27.2 remains affected despite its higher
+minor version. A clean vulnerability scan with the fixed toolchain is a release gate.
+
 ## Validation contract
 
 Local checks include Go unit/race tests, vet, formatting, minimum-Go tests,

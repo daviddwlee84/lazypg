@@ -10,6 +10,8 @@ docker compose version
 docker info
 ```
 
+Use a patched Go toolchain (1.26.10 or 1.27.3 or newer) for source builds.
+
 For an exact version, use the matching release archive and its checksums, or:
 
 ```sh

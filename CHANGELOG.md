@@ -4,6 +4,8 @@
 
 ## v0.1.0 — 2026-10-28
 
+Source builds require a patched Go toolchain: Go 1.26.10 or 1.27.3 or newer.
+
 Initial public early-stage release: local PostgreSQL workflows, explicit remote
 environments with tier policy, pgschema/dbmate, scripts, branches and cross-project
 dependencies. macOS/Linux amd64/arm64 archives, fixed-version Go installation and

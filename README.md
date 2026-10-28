@@ -23,7 +23,7 @@ lazypg --version
 Alternatively, download a matching macOS/Linux amd64/arm64 archive from
 [Releases](https://github.com/daviddwlee84/lazypg/releases), verify it against
 `checksums.txt`, and install the executable on your PATH. Source installation
-requires Go 1.26 or newer:
+requires patched Go 1.26.10 or Go 1.27.3 or newer:
 
 ```sh
 go install github.com/daviddwlee84/lazypg/cmd/lazypg@v0.1.0
