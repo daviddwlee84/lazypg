@@ -92,10 +92,15 @@ func newFile(dir, name string) (string, error) {
 		return "", err
 	}
 	path := filepath.Join(dir, time.Now().UTC().Format("20060102150405")+"_"+name+".sql")
-	if _, err := os.Stat(path); err == nil {
-		return "", fmt.Errorf("%s already exists", path)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return "", err
 	}
-	return path, os.WriteFile(path, []byte("-- migrate:up\n\n\n-- migrate:down\n\n"), 0o644)
+	if _, err = f.Write([]byte("-- migrate:up\n\n\n-- migrate:down\n\n")); err != nil {
+		f.Close()
+		return "", err
+	}
+	return path, f.Close()
 }
 
 // BaselineScripts records every script of phase as applied without running

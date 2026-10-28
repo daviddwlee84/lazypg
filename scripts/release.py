@@ -146,8 +146,18 @@ class GitHub:
         return matches[0] if matches else None
 
     def create(self, tag):
-        self.call("release", "create", tag, "--repo", self.repo, "--verify-tag", "--draft",
-                  "--title", tag, "--generate-notes")
+        text = Path("CHANGELOG.md").read_text()
+        heading = re.search(r"(?m)^## " + re.escape(tag) + r"(?:[ \t].*)?$", text)
+        if heading is None:
+            raise ValueError("tag has no changelog entry")
+        body = text[heading.end():].split("\n## ", 1)[0].strip()
+        if not body:
+            raise ValueError("changelog entry is empty")
+        with tempfile.TemporaryDirectory(prefix="release-notes-") as temporary:
+            notes = Path(temporary) / "notes.md"
+            notes.write_text(body + "\n")
+            self.call("release", "create", tag, "--repo", self.repo, "--verify-tag", "--draft",
+                      "--title", tag, "--notes-file", str(notes))
 
     def upload(self, tag, path):
         # Deliberately never use --clobber.
