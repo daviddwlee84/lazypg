@@ -163,18 +163,52 @@ func (e Pgschema) Pull(ctx context.Context, c *Context) error {
 	for _, s := range c.DB.Schemas {
 		file := DesiredFile(c.Project, c.DB, s)
 		dir := filepath.Dir(file)
-		if err := os.RemoveAll(dir); err != nil {
+		if err := os.MkdirAll(filepath.Dir(dir), 0o755); err != nil {
 			return err
 		}
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		staged, err := os.MkdirTemp(filepath.Dir(dir), ".pull-*")
+		if err != nil {
 			return err
 		}
+		defer os.RemoveAll(staged)
 		args, env := connArgs(c, s)
 		args = append([]string{"dump"}, args...)
-		args = append(args, "--multi-file", "--file", file)
+		args = append(args, "--multi-file", "--file", filepath.Join(staged, "main.sql"))
 		var stdout bytes.Buffer
 		if err := run(ctx, bin, args, env, &stdout); err != nil {
 			return err
+		}
+		if _, err := os.Stat(filepath.Join(staged, "main.sql")); err != nil {
+			return fmt.Errorf("dump did not produce main.sql: %w", err)
+		}
+		backup, err := os.MkdirTemp(filepath.Dir(dir), ".pull-backup-*")
+		if err != nil {
+			return err
+		}
+		if err := os.Remove(backup); err != nil {
+			return err
+		}
+		existed := false
+		if _, err := os.Lstat(dir); err == nil {
+			if err := os.Rename(dir, backup); err != nil {
+				return err
+			}
+			existed = true
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+		if err := os.Rename(staged, dir); err != nil {
+			if existed {
+				if restoreErr := os.Rename(backup, dir); restoreErr != nil {
+					return fmt.Errorf("install dump: %v; old schema preserved at %s: %w", err, backup, restoreErr)
+				}
+			}
+			return err
+		}
+		if existed {
+			if err := os.RemoveAll(backup); err != nil {
+				return err
+			}
 		}
 		fmt.Fprintf(c.Log, "wrote %s\n", relTo(c.Project.Dir, dir))
 	}

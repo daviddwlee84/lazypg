@@ -8,6 +8,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/daviddwlee84/lazypg/internal/env"
 	"github.com/daviddwlee84/lazypg/internal/instance"
@@ -35,12 +36,15 @@ func Run(ctx context.Context, t *env.Target, image, dbname string, tty bool, std
 	if tty {
 		a = append(a, "-t")
 	}
+	var childEnv []string
 	for _, e := range c.PGEnv(dbname) {
-		a = append(a, "-e", e)
+		key, _, _ := strings.Cut(e, "=")
+		a = append(a, "-e", key)
+		childEnv = append(childEnv, e)
 	}
 	a = append(a, image, program)
 	a = append(a, args...)
-	return proc.Run(ctx, proc.Cmd{Name: "docker", Args: a, Stdin: stdin, Stdout: stdout, Stderr: stderr})
+	return proc.Run(ctx, proc.Cmd{Name: "docker", Args: a, Env: childEnv, Stdin: stdin, Stdout: stdout, Stderr: stderr})
 }
 
 // Interactive runs psql attached to the current terminal.

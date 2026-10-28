@@ -55,9 +55,14 @@ func Load(opts Options) (*App, error) {
 		return nil, err
 	}
 	out := output.New(opts.JSON)
+	var interactive *bool
+	if opts.JSON {
+		no := false
+		interactive = &no
+	}
 	return &App{
 		Project: p, State: st, Resolver: r, Out: out, EnvFlag: opts.Env,
-		Prompt: env.Prompt{Yes: opts.Yes, Confirm: opts.Confirm, In: os.Stdin, Out: os.Stderr},
+		Prompt: env.Prompt{Yes: opts.Yes, Confirm: opts.Confirm, In: os.Stdin, Out: os.Stderr, Interactive: interactive},
 	}, nil
 }
 
@@ -84,10 +89,10 @@ func (a *App) Audit(t *env.Target, op env.Op, db, detail string, err error) {
 	}
 	e := state.AuditEntry{
 		Project: a.Project.Project, Env: t.Env, Tier: t.Tier, Instance: t.Instance,
-		Op: string(op), Database: db, Detail: detail, OK: err == nil,
+		Op: string(op), Database: db, Detail: t.Redact(detail), OK: err == nil,
 	}
 	if err != nil {
-		e.Error = err.Error()
+		e.Error = t.Redact(err.Error())
 	}
 	if aerr := state.Audit(e); aerr != nil {
 		a.Out.Warn("audit log: %v", aerr)

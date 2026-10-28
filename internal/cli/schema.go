@@ -236,7 +236,7 @@ func newSeed() *cobra.Command {
 	var dbs []string
 	c := &cobra.Command{
 		Use:   "seed",
-		Short: "Run seed files (never on stage/prod)",
+		Short: "Run seed files (stage requires confirmation; prod is denied)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			a, t, err := target(ctx, false)

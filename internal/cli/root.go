@@ -36,14 +36,14 @@ func newRoot() *cobra.Command {
 
 Schema engines per database: pgschema (declarative, default) or dbmate (versioned).
 Committed config lives in lazypg.toml; machine config and credentials in ~/.config/lazypg.`,
-		Version:       Version,
+		Version:       buildVersion(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
 	pf := root.PersistentFlags()
 	pf.StringVarP(&opts.Env, "env", "e", "", "environment: local, dev, stage, prod, … (default: the one chosen with \"env use\", else local)")
 	pf.BoolVar(&opts.JSON, "json", false, "machine-readable output on stdout")
-	pf.BoolVarP(&opts.Yes, "yes", "y", false, "answer yes to confirmations (not sufficient for prod)")
+	pf.BoolVarP(&opts.Yes, "yes", "y", false, "answer yes to y/N confirmations (not sufficient for prod migrations)")
 	pf.StringVar(&opts.Confirm, "confirm", "", "confirm an operation on the named env (required for prod in non-interactive use)")
 	pf.StringVarP(&opts.Dir, "dir", "C", ".", "run as if started in this directory")
 

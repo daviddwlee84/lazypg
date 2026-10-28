@@ -60,9 +60,13 @@ func (a *App) DepRefs(t *env.Target, res []*deps.Resolved) ([]DBRef, error) {
 	for _, d := range res {
 		for _, db := range d.Databases {
 			name := t.DepDBName(d.OwnerName(), db)
+			if err := config.ValidateDBName(name); err != nil {
+				return nil, err
+			}
 			if owned[name] {
 				return nil, fmt.Errorf("dep %s database %s collides with a database this project owns; set db_name on one of them", d.Dep.Name, name)
 			}
+			owned[name] = true
 			owner := d.Owner
 			if owner == nil {
 				owner = a.Project

@@ -80,7 +80,7 @@ func (a *App) Status(ctx context.Context, t *env.Target, depRefs []DBRef) *Statu
 		if t.Port == 0 {
 			s.Container = "never started"
 		} else if st, err := t.Compose.State(ctx); err != nil {
-			s.Error = err.Error()
+			s.Error = t.Redact(err.Error())
 		} else if st == "" {
 			s.Container = "absent"
 		} else {
@@ -93,7 +93,7 @@ func (a *App) Status(ctx context.Context, t *env.Target, depRefs []DBRef) *Statu
 	reachable := t.Port != 0 && (!t.Managed() || s.Container == "running")
 	if reachable {
 		if _, err := dbops.ServerVersion(ctx, t); err != nil {
-			s.Error, reachable = err.Error(), false
+			s.Error, reachable = t.Redact(err.Error()), false
 		}
 	}
 	s.Reachable = reachable

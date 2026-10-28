@@ -70,6 +70,8 @@ func For(db *config.Database) (Engine, error) {
 
 // Bundle is a saved plan for CI: generated in a PR, applied after merge.
 type Bundle struct {
+	TargetID  string    `json:"target_id"`
+	SourceID  string    `json:"source_id"`
 	Format    int       `json:"lazypg_plan"`
 	Project   string    `json:"project"`
 	Env       string    `json:"env"`
@@ -78,7 +80,7 @@ type Bundle struct {
 }
 
 // BundleFormat is the current plan bundle version.
-const BundleFormat = 1
+const BundleFormat = 2
 
 // WriteBundle saves a bundle to path.
 func WriteBundle(path string, b *Bundle) error {

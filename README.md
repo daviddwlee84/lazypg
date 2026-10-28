@@ -1,11 +1,13 @@
 # lazypg
 
+**Early stage (v0.1).** Review schema plans and keep backups before using shared or production databases. See [limitations and review](docs/publication-review.md).
+
 A PostgreSQL development workflow with a Supabase-CLI-style UX, built from existing tools: Docker Compose, [pgschema](https://github.com/pgplex/pgschema), [dbmate](https://github.com/amacneil/dbmate) and pgx.
 
 - **Reproducible local databases**: `lazypg start` brings up PostgreSQL, applies the schema from the repo, and seeds new databases.
 - **Safe environments**: you work against `local`, `dev`, `stage` and `prod` by name instead of juggling `.env` files. Each tier has its own guard rails.
 - **Schema as code, per database**: choose declarative pgschema (the default) or versioned dbmate migrations.
-- **Multi-project sharing**: every repo owns its own schema. Repos can share one machine-level instance, and consume each other's databases as read-only deps.
+- **Multi-project sharing**: every repo owns its own schema. Repos can share one machine-level instance, and consume each other's databases as dependencies. Database roles control write permissions.
 
 You only need Docker and the `lazypg` binary. `psql` and `pg_dump` run inside containers, and pgschema is downloaded at its pinned version with checksum verification.
 
@@ -14,10 +16,32 @@ You only need Docker and the `lazypg` binary. `psql` and `pg_dump` run inside co
 ## Install
 
 ```sh
-go install github.com/daviddwlee84/lazypg/cmd/lazypg@latest
+brew install daviddwlee84/tap/lazypg
+lazypg --version
 ```
 
-Supported platforms: macOS and Linux. pgschema does not support Windows; use WSL there.
+Alternatively, download a matching macOS/Linux amd64/arm64 archive from
+[Releases](https://github.com/daviddwlee84/lazypg/releases), verify it against
+`checksums.txt`, and install the executable on your PATH. Source installation
+requires Go 1.26 or newer:
+
+```sh
+go install github.com/daviddwlee84/lazypg/cmd/lazypg@v0.1.0
+```
+
+Inspect `go env GOBIN GOPATH` to locate the installed binary (`GOBIN`, or
+`bin` under `GOPATH`); include that directory in PATH. Docker with Compose v2
+and a running daemon is needed for local databases. Git is needed for Git-based
+orgs and dependencies. pgtui is an optional, separately installed browser.
+Windows users can use the Linux build inside WSL with Docker integration.
+
+Upgrade using the original installation channel: `brew upgrade daviddwlee84/tap/lazypg`,
+`go install github.com/daviddwlee84/lazypg/cmd/lazypg@latest`, or a new verified
+release archive. v0.1 deliberately uses these external upgrade paths and has no
+self-update command. Check `command -v lazypg` and `lazypg --version` afterward
+so another copy on PATH does not hide the upgrade. See the [changelog](CHANGELOG.md).
+
+[Set up another machine](docs/new-machine.md) without copying credentials or runtime state.
 
 ## Quick start
 
@@ -102,8 +126,8 @@ lazypg doctor                                               # docker, tools, eve
 | stage | no reset, no rollback, no branch; seed asks for confirmation | confirm | yes |
 | prod | **denied** | type `prod`, or pass `--confirm prod` (`--yes` is not enough) | confirm |
 
-- Every command that touches a database first prints a colored banner such as `● prod · acme/prod · journal`.
-- Commands against non-local envs are appended to `~/.local/state/lazypg/audit.jsonl`.
+- Database-changing and connection commands print a colored banner such as `● prod · acme/prod · journal`.
+- Schema/data changes made through lazypg against non-local envs are appended to `~/.local/state/lazypg/audit.jsonl`.
 - Policy denials exit with code 3.
 - If an env's tier and its instance's declared tier disagree, lazypg refuses to run instead of guessing which one is right.
 
@@ -118,7 +142,7 @@ lazypg url --db events
 
 `lazypg ui` opens the selected env in pgtui. In pgtui's connection dialog, press Tab to reach "Discovered", then Enter on the "(Environment)" entry. pgtui v0.3.0 ignores `PGDATABASE` and opens the `postgres` database; its main branch opens the right database (`go install github.com/pgplex/pgtui/cmd/pgtui@main`).
 
-For CI, set `LAZYPG_URL_<ENV>` (for example `LAZYPG_URL_PROD=postgres://…`). It supplies the whole connection, and the tier still comes from `lazypg.toml`.
+For CI, set `LAZYPG_URL_<ENV>` (for example `LAZYPG_URL_PROD=postgres://…`). It overrides host, port, user, password and sslmode; the URL database path is ignored, and database naming and tier come from `lazypg.toml`. Set a suitable database role and TLS settings for the target. This explicit override bypasses instance-tier cross-checking.
 
 ## Schema engines
 
@@ -147,7 +171,13 @@ lazypg plan --env prod --out plan.json        # attach to the PR for review
 lazypg migrate --env prod --plan plan.json --confirm prod
 ```
 
-If the database changed after the plan was made, pgschema's fingerprint check rejects the stale plan.
+Saved plans are bound to the resolved connection target, branch, physical database names,
+engine, project configuration, and migration/script contents. pgschema also checks the
+live schema fingerprint; dbmate checks its pending migration set. Edited scripts or
+migrations require another plan and review. Plans are trusted execution artifacts:
+protect them as you would SQL deployment scripts. Plans from the pre-publication
+format must be regenerated. `plan` does not apply changes to the target, but can
+create/bootstrap the local `lazypg_plan` scratch database and download pgschema.
 
 ## Local instances, branches, multi-project sharing
 
@@ -169,7 +199,17 @@ If the database changed after the plan was made, pgschema's fingerprint check re
 - On local, lazypg builds a dep from its owner's own engine, scripts and seeds.
 - Existing dep databases are left alone, because on a shared server the owner may be developing a newer schema in that very database. Use `lazypg deps apply --force` to rebuild them.
 - A personal override (`[overrides.<project>.dep_paths]` in your user config) points a dep at a local checkout without touching the lock.
-- On remote envs, deps resolve to the owner's database name. Writes to them are refused.
+- On remote envs, deps resolve to the owner's database name. Schema/data management commands select owned databases; `psql`, `exec`, and exported URLs still have the permissions of the configured role. Use a database-enforced read-only role when needed.
+
+## Trust and credentials
+
+Run lazypg only in trusted projects: schema, bootstrap, seeds and migrations execute SQL;
+Git dependency SQL is also executable input. `password_cmd` intentionally executes a
+configured shell command. Credentials remain machine-local, with `credentials.toml`
+written as mode 0600. Environment exports and child applications receive credentials
+intentionally; avoid recording their output. Tier confirmations reduce mistakes and
+do not replace PostgreSQL authorization or backups. Audit logs cover lazypg-managed
+schema/data operations, are best effort, and are not a complete database audit trail.
 
 ## Development
 
@@ -190,3 +230,7 @@ Code layout: `internal/cli` is a thin Cobra layer over `internal/app`, which hol
   - `console config` for pgconsole.
   - Keychain support.
 - **Later:** a Bubble Tea dashboard.
+
+## License
+
+[MIT](LICENSE). Development skill files retain their own MIT notice.

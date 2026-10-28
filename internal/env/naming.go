@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/daviddwlee84/lazypg/internal/config"
 )
@@ -83,15 +84,13 @@ func (t *Target) RedactedURL(dbname string) string {
 func (t *Target) PGEnv(dbname string) []string {
 	env := []string{
 		"PGHOST=" + t.Host,
+		"PGHOSTADDR=",
+		"PGSERVICE=",
 		"PGPORT=" + strconv.Itoa(t.Port),
 		"PGUSER=" + t.User,
 		"PGDATABASE=" + dbname,
-	}
-	if t.Password != "" {
-		env = append(env, "PGPASSWORD="+t.Password)
-	}
-	if t.SSLMode != "" {
-		env = append(env, "PGSSLMODE="+t.SSLMode)
+		"PGPASSWORD=" + t.Password,
+		"PGSSLMODE=" + t.SSLMode,
 	}
 	return env
 }
@@ -99,4 +98,15 @@ func (t *Target) PGEnv(dbname string) []string {
 // Label is the short description used in banners and errors.
 func (t *Target) Label() string {
 	return fmt.Sprintf("%s · %s", t.Env, t.Instance)
+}
+
+// Redact removes the known target password from diagnostics, including URL escapes.
+func (t *Target) Redact(text string) string {
+	if t.Password == "" {
+		return text
+	}
+	for _, value := range []string{url.QueryEscape(t.Password), url.PathEscape(t.Password), t.Password} {
+		text = strings.ReplaceAll(text, value, "[redacted]")
+	}
+	return text
 }

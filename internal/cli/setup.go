@@ -42,6 +42,9 @@ say instance = "acme/prod" instead of copying hostnames into every repo.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
+			if err := config.ValidateComponent("org", name); err != nil {
+				return err
+			}
 			if (gitURL == "") == (path == "") {
 				return fmt.Errorf("pass exactly one of --git or --path")
 			}
@@ -171,6 +174,9 @@ say instance = "acme/prod" instead of copying hostnames into every repo.`,
 }
 
 func syncOrg(ctx context.Context, name string, r config.OrgRef) error {
+	if err := config.ValidateComponent("org", name); err != nil {
+		return err
+	}
 	dir := filepath.Join(xdg.DataDir(), "orgs", name)
 	if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
 		args := []string{"clone", "--quiet", "--depth", "1"}
@@ -180,7 +186,7 @@ func syncOrg(ctx context.Context, name string, r config.OrgRef) error {
 		if err := os.MkdirAll(filepath.Dir(dir), 0o755); err != nil {
 			return err
 		}
-		return proc.Run(ctx, proc.Cmd{Name: "git", Args: append(args, r.Git, dir)})
+		return proc.Run(ctx, proc.Cmd{Name: "git", Args: append(args, "--", r.Git, dir)})
 	}
 	return proc.Run(ctx, proc.Cmd{Name: "git", Args: []string{"-C", dir, "pull", "--quiet", "--ff-only"}})
 }
@@ -202,7 +208,7 @@ func newLogin() *cobra.Command {
 			}
 			cred := config.Credential{User: user, PasswordCmd: cmdStr, PasswordEnv: envVar}
 			if cmdStr == "" && envVar == "" {
-				if !term.IsTerminal(int(os.Stdin.Fd())) {
+				if opts.JSON || !term.IsTerminal(int(os.Stdin.Fd())) {
 					return fmt.Errorf("no terminal to read a password from; use --password-cmd or --password-env")
 				}
 				fmt.Fprintf(cmd.ErrOrStderr(), "Password for %s: ", alias)

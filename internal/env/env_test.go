@@ -181,3 +181,20 @@ shared = true
 		t.Fatalf("url override: %+v", ci)
 	}
 }
+
+func TestMalformedURLDoesNotExposeCredential(t *testing.T) {
+	target := &Target{}
+	for _, raw := range []string{"postgres://user:private%zz@localhost/db", "postgres://localhost/db"} {
+		err := target.applyURL(raw)
+		if err == nil || strings.Contains(err.Error(), "private") {
+			t.Fatalf("unsafe URL diagnostic: %v", err)
+		}
+	}
+}
+func TestPGEnvClearsInheritedSecrets(t *testing.T) {
+	target := &Target{Host: "localhost", Port: 5432, User: "app"}
+	vars := strings.Join(target.PGEnv("app"), "\n")
+	if !strings.Contains(vars, "PGPASSWORD=\n") {
+		t.Fatal("empty credential override is missing")
+	}
+}

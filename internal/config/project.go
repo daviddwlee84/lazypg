@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -204,6 +205,17 @@ func (p *Project) Validate() error {
 	if len(p.Databases) == 0 && len(p.Deps) == 0 {
 		errs = append(errs, errors.New("declare at least one [[databases]] or [[deps]]"))
 	}
+	if err := ValidateComponent("server", p.Local.Server); err != nil {
+		errs = append(errs, err)
+	}
+	if p.Org != "" {
+		if err := ValidateComponent("org", p.Org); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if !regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`).MatchString(p.Tools.Pgschema) {
+		errs = append(errs, fmt.Errorf("invalid pgschema version %q", p.Tools.Pgschema))
+	}
 	seen := map[string]bool{}
 	for _, d := range p.Databases {
 		if !identRe.MatchString(d.Name) {
@@ -213,6 +225,19 @@ func (p *Project) Validate() error {
 			errs = append(errs, fmt.Errorf("duplicate database %q", d.Name))
 		}
 		seen[d.Name] = true
+		if err := ValidateDBName(d.Name); err != nil {
+			errs = append(errs, err)
+		}
+		if d.DBName != "" {
+			if err := ValidateDBName(d.DBName); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		for _, schema := range d.Schemas {
+			if strings.Contains(schema, "/") {
+				errs = append(errs, fmt.Errorf("invalid schema path"))
+			}
+		}
 		if d.Engine != EnginePgschema && d.Engine != EngineDbmate {
 			errs = append(errs, fmt.Errorf("database %q: engine %q must be %q or %q", d.Name, d.Engine, EnginePgschema, EngineDbmate))
 		}
@@ -248,6 +273,11 @@ func (p *Project) Validate() error {
 		}
 	}
 	for name, e := range p.Envs {
+		for _, physical := range e.DBNames {
+			if err := ValidateDBName(physical); err != nil {
+				errs = append(errs, err)
+			}
+		}
 		if name == EnvLocal {
 			errs = append(errs, fmt.Errorf("env %q is implicit and cannot be redefined", EnvLocal))
 		}

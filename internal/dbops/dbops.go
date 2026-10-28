@@ -28,7 +28,7 @@ func Connect(ctx context.Context, t *env.Target, dbname string) (*pgx.Conn, erro
 	defer cancel()
 	conn, err := pgx.ConnectConfig(cctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("connect %s: %w", t.RedactedURL(dbname), err)
+		return nil, fmt.Errorf("connect %s: %s", t.RedactedURL(dbname), t.Redact(err.Error()))
 	}
 	return conn, nil
 }

@@ -138,7 +138,7 @@ func checkout(ctx context.Context, d config.Dep, locked string, useLock bool) (s
 		if err := os.MkdirAll(filepath.Dir(dir), 0o755); err != nil {
 			return "", "", err
 		}
-		if err := proc.Run(ctx, proc.Cmd{Name: "git", Args: []string{"clone", "--quiet", d.Git, dir}}); err != nil {
+		if err := proc.Run(ctx, proc.Cmd{Name: "git", Args: []string{"clone", "--quiet", "--", d.Git, dir}}); err != nil {
 			return "", "", err
 		}
 	}

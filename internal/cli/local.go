@@ -241,6 +241,10 @@ func newServer() *cobra.Command {
 			}
 			if purge {
 				p := env.Prompt{Yes: opts.Yes, In: cmd.InOrStdin(), Out: cmd.ErrOrStderr()}
+				if opts.JSON {
+					no := false
+					p.Interactive = &no
+				}
 				if err := env.ConfirmYN(p, "Delete server "+name+" and ALL databases of ALL projects on it."); err != nil {
 					return err
 				}

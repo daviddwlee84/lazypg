@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -30,6 +31,9 @@ type Logf func(format string, a ...any)
 // $LAZYPG_PGSCHEMA_BIN, a matching `pgschema` on PATH, the XDG tool cache,
 // then a checksum-verified download from the GitHub release.
 func Pgschema(ctx context.Context, version string, logf Logf) (string, error) {
+	if !regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`).MatchString(version) {
+		return "", fmt.Errorf("invalid pgschema version")
+	}
 	if p := os.Getenv(PgschemaEnv); p != "" {
 		return p, nil
 	}
@@ -77,8 +81,21 @@ func downloadPgschema(ctx context.Context, version, dir, bin string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	tmp := bin + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o755); err != nil {
+	f, err := os.CreateTemp(dir, ".download-*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	if _, err = f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err = f.Chmod(0o755); err != nil {
+		f.Close()
+		return err
+	}
+	if err = f.Close(); err != nil {
 		return err
 	}
 	return os.Rename(tmp, bin)

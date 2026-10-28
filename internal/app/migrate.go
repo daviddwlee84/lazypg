@@ -25,6 +25,7 @@ type DBRef struct {
 // Owned returns this project's databases on t, optionally filtered by name.
 func (a *App) Owned(t *env.Target, only []string) ([]DBRef, error) {
 	var out []DBRef
+	seen := map[string]bool{}
 	for _, name := range only {
 		if _, ok := a.Project.DB(name); !ok {
 			return nil, fmt.Errorf("this project owns no database %q", name)
@@ -32,10 +33,19 @@ func (a *App) Owned(t *env.Target, only []string) ([]DBRef, error) {
 	}
 	for i := range a.Project.Databases {
 		db := &a.Project.Databases[i]
+		base := t.BaseDBName(a.Project, db)
+		if err := config.ValidateDBName(base); err != nil {
+			return nil, err
+		}
+		name := t.DBName(a.Project, db)
+		if len(name) > 63 || seen[name] {
+			return nil, fmt.Errorf("duplicate or overlong physical database name %q", name)
+		}
+		seen[name] = true
 		if len(only) > 0 && !contains(only, db.Name) {
 			continue
 		}
-		out = append(out, DBRef{Owner: a.Project, DB: db, DBName: t.DBName(a.Project, db)})
+		out = append(out, DBRef{Owner: a.Project, DB: db, DBName: name})
 	}
 	return out, nil
 }
@@ -168,8 +178,21 @@ func (a *App) Migrate(ctx context.Context, t *env.Target, refs []DBRef, opts Mig
 		if b.Project != a.Project.Project || b.Env != t.Env {
 			return nil, fmt.Errorf("plan %s is for %s/%s, not %s/%s", opts.PlanFile, b.Project, b.Env, a.Project.Project, t.Env)
 		}
+		targetID, sourceID, err := a.planIdentity(t, refs)
+		if err != nil {
+			return nil, err
+		}
+		if b.TargetID != targetID || b.SourceID != sourceID {
+			return nil, fmt.Errorf("plan target or migration/script inputs changed; re-run plan and review")
+		}
 		bundle = map[string]*engine.Plan{}
 		for _, p := range b.Plans {
+			if p == nil {
+				return nil, fmt.Errorf("plan contains null database entry")
+			}
+			if _, duplicate := bundle[p.Database]; duplicate {
+				return nil, fmt.Errorf("plan contains duplicate database %s", p.Database)
+			}
 			if len(p.PreScripts) > 0 || p.Missing {
 				return nil, fmt.Errorf("plan %s was made while %s still needed creation or pre scripts; re-plan", opts.PlanFile, p.Database)
 			}
@@ -220,6 +243,9 @@ func (a *App) Migrate(ctx context.Context, t *env.Target, refs []DBRef, opts Mig
 			p, ok := bundle[r.DB.Name]
 			if !ok {
 				return nil, fmt.Errorf("plan %s has no entry for database %s", opts.PlanFile, r.DB.Name)
+			}
+			if p.DBName != r.DBName || p.Engine != r.DB.Engine {
+				return nil, fmt.Errorf("plan database or engine does not match %s", r.DB.Name)
 			}
 			plans[i] = p
 		} else if plans[i], err = e.Plan(ctx, c); err != nil {
@@ -311,7 +337,11 @@ func (a *App) prepare(ctx context.Context, t *env.Target, r DBRef, p *prep, res 
 // not exist yet, or have pending pre scripts, are reported but cannot be
 // planned exactly.
 func (a *App) Plan(ctx context.Context, t *env.Target, refs []DBRef) (*engine.Bundle, error) {
-	b := &engine.Bundle{Format: engine.BundleFormat, Project: a.Project.Project, Env: t.Env, CreatedAt: time.Now().UTC()}
+	targetID, sourceID, err := a.planIdentity(t, refs)
+	if err != nil {
+		return nil, err
+	}
+	b := &engine.Bundle{Format: engine.BundleFormat, Project: a.Project.Project, Env: t.Env, CreatedAt: time.Now().UTC(), TargetID: targetID, SourceID: sourceID}
 	planHost, err := a.PlanHost(ctx, t, extensionsOf(refs))
 	if err != nil {
 		return nil, err

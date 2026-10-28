@@ -77,6 +77,9 @@ func CredentialsPath() string { return filepath.Join(xdg.ConfigDir(), "credentia
 
 // OrgDir returns the directory holding an org's lazypg-org.toml.
 func OrgDir(u *config.User, org string) (string, error) {
+	if err := config.ValidateComponent("org", org); err != nil {
+		return "", err
+	}
 	ref, ok := u.Orgs[org]
 	if !ok {
 		return "", fmt.Errorf("org %q is not registered on this machine (run `%s org add %s --git <url>` or `--path <dir>`)", org, config.AppName, org)
@@ -153,10 +156,13 @@ func URLEnvVar(env string) string {
 func (t *Target) applyURL(raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid PostgreSQL connection URL")
 	}
 	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
 		return fmt.Errorf("scheme must be postgres://")
+	}
+	if u.Hostname() == "" || u.User == nil || u.User.Username() == "" {
+		return fmt.Errorf("connection URL requires host and user")
 	}
 	t.Host = u.Hostname()
 	t.Port = 5432

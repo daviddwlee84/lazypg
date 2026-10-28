@@ -53,6 +53,9 @@ func (a *App) EnsureLocal(ctx context.Context, t *env.Target) error {
 // EnsureServer creates (if needed) and starts a named machine-level server.
 // image and port only apply when the server is first created.
 func EnsureServer(ctx context.Context, name, image string, port int, logf func(string, ...any)) (*state.Server, error) {
+	if port < 0 || port > 65535 {
+		return nil, fmt.Errorf("port must be between 1 and 65535, or 0 for automatic allocation")
+	}
 	srv, existed, err := state.LoadServer(name)
 	if err != nil {
 		return nil, err

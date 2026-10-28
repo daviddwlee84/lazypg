@@ -1,0 +1,66 @@
+name: CI
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+  push:
+    branches: ["**"]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Check formatting
+        run: test -z "$(gofmt -l cmd internal integration)"
+      - run: go vet ./...
+      - run: go test -race ./...
+      - run: go run ./cmd/lazypg --help
+      - run: go run ./cmd/lazypg completion zsh
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: LAZYPG_IT=1 go test ./integration -v -count=1 -timeout 15m
+  distribution:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts -v
+      - run: python3 scripts/check-distribution.py
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: v2.18.2
+          args: check
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: v2.18.2
+          args: release --snapshot --clean --skip=publish,announce
+      - run: python3 scripts/release.py check --project lazypg --binary lazypg --smoke

@@ -2,3 +2,10 @@
 /bin/
 /dist/
 /.sandbox/
+
+/completions/
+.DS_Store
+/.specstory/
+/.claude/
+*.test
+__pycache__/

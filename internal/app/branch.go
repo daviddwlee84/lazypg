@@ -25,7 +25,7 @@ func (a *App) branchBase(t *env.Target) (*env.Target, []DBRef, error) {
 // BranchCreate copies every owned database (from the active branch, or main)
 // into <db>__<name> with CREATE DATABASE … TEMPLATE, then switches to it.
 func (a *App) BranchCreate(ctx context.Context, t *env.Target, name string, from string, switchTo bool) error {
-	if !branchRe.MatchString(name) {
+	if name == "main" || !branchRe.MatchString(name) {
 		return fmt.Errorf("branch name %q must match %s", name, branchRe)
 	}
 	if err := a.Check(t, env.OpBranch, "Create branch "+name); err != nil {
@@ -37,6 +37,23 @@ func (a *App) BranchCreate(ctx context.Context, t *env.Target, name string, from
 	}
 	if from == "" {
 		from = t.Branch
+	}
+	if from != "" && from != "main" && !branchRe.MatchString(from) {
+		return fmt.Errorf("invalid source branch %q", from)
+	}
+	// Validate every destination before any CREATE can truncate an identifier.
+	for _, r := range refs {
+		dst := r.DBName + env.BranchSep + name
+		if len(dst) > maxIdent || (from != "" && from != "main" && len(r.DBName+env.BranchSep+from) > maxIdent) {
+			return fmt.Errorf("branch database name %s exceeds %d characters", dst, maxIdent)
+		}
+		exists, err := dbops.Exists(ctx, base, dst)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return fmt.Errorf("branch database %s already exists", dst)
+		}
 	}
 	for _, r := range refs {
 		src := r.DBName
@@ -65,13 +82,22 @@ func (a *App) BranchCreate(ctx context.Context, t *env.Target, name string, from
 		}
 	}
 	if switchTo {
-		return a.BranchUse(ctx, t, name)
+		return a.setBranch(ctx, t, name)
 	}
 	return nil
 }
 
 // BranchUse selects the branch for t's env; "main" or "" returns to the base databases.
 func (a *App) BranchUse(ctx context.Context, t *env.Target, name string) error {
+	if err := a.Check(t, env.OpBranch, "Switch branch "+name); err != nil {
+		return err
+	}
+	return a.setBranch(ctx, t, name)
+}
+func (a *App) setBranch(ctx context.Context, t *env.Target, name string) error {
+	if name != "" && !branchRe.MatchString(name) {
+		return fmt.Errorf("invalid branch name %q", name)
+	}
 	if name == "main" {
 		name = ""
 	}
@@ -145,7 +171,7 @@ func (a *App) BranchList(ctx context.Context, t *env.Target) ([]BranchInfo, erro
 
 // BranchDelete drops a branch's databases.
 func (a *App) BranchDelete(ctx context.Context, t *env.Target, name string) error {
-	if name == "" || name == "main" {
+	if name == "" || name == "main" || !branchRe.MatchString(name) {
 		return fmt.Errorf("cannot delete main; use reset instead")
 	}
 	if err := a.Check(t, env.OpBranch, "Delete branch "+name); err != nil {
@@ -154,6 +180,11 @@ func (a *App) BranchDelete(ctx context.Context, t *env.Target, name string) erro
 	base, refs, err := a.branchBase(t)
 	if err != nil {
 		return err
+	}
+	for _, r := range refs {
+		if len(r.DBName+env.BranchSep+name) > maxIdent {
+			return fmt.Errorf("branch database name exceeds %d characters", maxIdent)
+		}
 	}
 	for _, r := range refs {
 		d := r.DBName + env.BranchSep + name
@@ -165,7 +196,7 @@ func (a *App) BranchDelete(ctx context.Context, t *env.Target, name string) erro
 		}
 	}
 	if t.Branch == name {
-		return a.BranchUse(ctx, t, "")
+		return a.setBranch(ctx, t, "")
 	}
 	return nil
 }

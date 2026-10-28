@@ -1,0 +1,9 @@
+{
+  "main": "./cmd/lazypg",
+  "version_symbol": "github.com/daviddwlee84/lazypg/internal/cli.Version",
+  "required": [
+    "cmd/lazypg/main.go",
+    "internal/instance/compose.yaml.tmpl"
+  ],
+  "smoke": []
+}

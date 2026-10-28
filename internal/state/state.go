@@ -65,6 +65,9 @@ func SaveProject(p *config.Project, s *Project) error {
 
 // LoadServer returns the named server's state; ok is false when it was never created.
 func LoadServer(name string) (*Server, bool, error) {
+	if err := config.ValidateComponent("server", name); err != nil {
+		return nil, false, err
+	}
 	path := serverPath(name)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return &Server{Name: name}, false, nil
@@ -77,7 +80,12 @@ func LoadServer(name string) (*Server, bool, error) {
 }
 
 // SaveServer persists server state.
-func SaveServer(s *Server) error { return config.SaveTOML(serverPath(s.Name), s, 0o644) }
+func SaveServer(s *Server) error {
+	if err := config.ValidateComponent("server", s.Name); err != nil {
+		return err
+	}
+	return config.SaveTOML(serverPath(s.Name), s, 0o644)
+}
 
 // ListServers returns all known servers.
 func ListServers() ([]*Server, error) {
