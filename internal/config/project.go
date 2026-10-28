@@ -72,7 +72,7 @@ type Database struct {
 	Bootstrap  string   `toml:"bootstrap,omitempty"`
 }
 
-// Dep is a read-only dependency on databases owned by another repository.
+// Dep references databases owned by another repository; PostgreSQL roles enforce SQL permissions.
 type Dep struct {
 	Name      string   `toml:"name"`
 	Git       string   `toml:"git,omitempty"`

@@ -1,4 +1,4 @@
-// Package deps resolves read-only database dependencies owned by other
+// Package deps resolves database dependencies owned by other
 // repositories: a git repository pinned by lazypg.lock, a local checkout, or
 // a vendored schema file.
 package deps

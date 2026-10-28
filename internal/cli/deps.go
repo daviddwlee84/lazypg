@@ -17,7 +17,7 @@ import (
 func newDeps() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "deps",
-		Short: "Databases owned by other repositories (read-only here)",
+		Short: "Databases owned by other repositories (SQL privileges follow the configured role)",
 	}
 	var update bool
 	sync := &cobra.Command{
