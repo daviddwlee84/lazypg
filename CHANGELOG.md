@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v0.1.1 — 2026-10-28
+
+Revalidate a saved default environment against its current tier. If a previously
+selected dev/stage environment becomes prod after a configuration change, the
+implicit target falls back to local. Production still requires explicit `--env`.
+The immutable v0.1.0 tag and assets remain available; new installs should use v0.1.1.
+
 ## v0.1.0 — 2026-10-28
 
 Source builds require a patched Go toolchain: Go 1.26.10 or 1.27.3 or newer.

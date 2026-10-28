@@ -198,3 +198,23 @@ func TestPGEnvClearsInheritedSecrets(t *testing.T) {
 		t.Fatal("empty credential override is missing")
 	}
 }
+
+func TestStickyEnvironmentCannotBecomeProduction(t *testing.T) {
+	project := &config.Project{Envs: map[string]config.EnvSpec{"selected": {Tier: config.TierDev}}}
+	resolver := &Resolver{Project: project, State: &state.Project{Env: "selected"}}
+	if got := resolver.Current(); got != "selected" {
+		t.Fatal(got)
+	}
+	project.Envs["selected"] = config.EnvSpec{Tier: config.TierProd}
+	if got := resolver.Current(); got != config.EnvLocal {
+		t.Fatalf("stale production selection must fall back to local, got %s", got)
+	}
+	project.Envs["selected"] = config.EnvSpec{Tier: config.TierStage}
+	if got := resolver.Current(); got != "selected" {
+		t.Fatal(got)
+	}
+	delete(project.Envs, "selected")
+	if got := resolver.Current(); got != config.EnvLocal {
+		t.Fatal(got)
+	}
+}

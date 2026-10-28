@@ -1,7 +1,7 @@
 # Set up another machine
 
-Install the same lazypg version on macOS or Linux (amd64/arm64). The first public
-version is v0.1.0. A release binary needs no Go installation.
+Install the same lazypg version on macOS or Linux (amd64/arm64). The current public
+version is v0.1.1. A release binary needs no Go installation.
 
 ```sh
 brew install daviddwlee84/tap/lazypg
@@ -15,7 +15,7 @@ Use a patched Go toolchain (1.26.10 or 1.27.3 or newer) for source builds.
 For an exact version, use the matching release archive and its checksums, or:
 
 ```sh
-go install github.com/daviddwlee84/lazypg/cmd/lazypg@v0.1.0
+go install github.com/daviddwlee84/lazypg/cmd/lazypg@v0.1.1
 ```
 
 Homebrew follows the latest stable release; fixed Go versions and release assets

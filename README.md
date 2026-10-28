@@ -26,7 +26,7 @@ Alternatively, download a matching macOS/Linux amd64/arm64 archive from
 requires patched Go 1.26.10 or Go 1.27.3 or newer:
 
 ```sh
-go install github.com/daviddwlee84/lazypg/cmd/lazypg@v0.1.0
+go install github.com/daviddwlee84/lazypg/cmd/lazypg@v0.1.1
 ```
 
 Inspect `go env GOBIN GOPATH` to locate the installed binary (`GOBIN`, or

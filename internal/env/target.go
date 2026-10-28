@@ -94,7 +94,7 @@ func OrgDir(u *config.User, org string) (string, error) {
 // selection from `env use`, or local.
 func (r *Resolver) Current() string {
 	if r.State != nil && r.State.Env != "" {
-		if _, ok := r.Project.Envs[r.State.Env]; ok {
+		if spec, ok := r.Project.Envs[r.State.Env]; ok && Policy(spec.Tier, OpUse) != Deny {
 			return r.State.Env
 		}
 	}

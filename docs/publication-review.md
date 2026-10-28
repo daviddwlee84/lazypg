@@ -1,4 +1,4 @@
-# Public release review — v0.1.0
+# Public release review — v0.1.1
 
 Reviewed on 2026-10-28. This is a bounded source and test review of an early-stage
 tool, not a production-readiness certification or an independent security audit.
@@ -72,6 +72,14 @@ On the candidate source with the patched Go 1.26.10 toolchain:
 The release tag workflow repeats the required checks on the exact public commit.
 Other native platforms are verified by its CI matrix; these local results alone
 make no claim about their runtime execution.
+
+## v0.1.1 follow-up
+
+Final inspection found that a saved dev/stage selection could silently become the
+implicit prod target after its configuration tier changed. `Current` now rechecks
+the current tier and falls back to local when defaults are denied. A regression
+test covers dev → prod → stage and removal. v0.1.0 remains immutable; v0.1.1 is
+the recommended version and repeats the same release gates.
 
 ## Remaining limitations
 
